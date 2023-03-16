@@ -1,0 +1,44 @@
+package main;
+import platforms.xdk110;
+
+/*
+native unchecked fn timeToDate(ref_time : uint32): string
+	header "time_to_date.h";
+
+let BASE_MONTH = 1;
+let BASE_YEAR = 2023;
+let LOW_POWER_MODE = true; // If booted in low power mode the initial date should be considered before flashing the application
+
+// This value should be in the same unit chosen for the system time
+let TIME_IN_SECOND = 100; // max value: 1000 (since the XDK internal clock runs in millisecond intervals)
+*/
+
+// This value needs to be synchronized with real time before flashing the application
+var SYSTEM_TIME : uint32 = 0; // max value: 4,294,967,295 (136 years in seconds; 1.36 years in centiseconds; 50 days in milliseconds)
+
+
+setup sd: SDCard {
+	var writer : string = appendingTextWrite("Collected Data.csv");
+}
+
+
+every XDK110.startup {
+	sd.writer.write(`System time,Acceleration magnitude,Acceleration x,Acceleration y,Acceleration z,Magnetometer magnitude,Magnetometer x,Magnetometer y,Magnetometer z,Temperature,Noise,Humidity`);
+}
+
+// This value should be in the same unit chosen for the system time
+every 10 milliseconds {
+	SYSTEM_TIME++;
+}
+
+
+every 1 minute {
+	/*
+	if(LOW_POWER_MODE) {
+		var timestamp = SYSTEM_TIME;
+	} else {
+		var timestamp: string = timeToDate(SYSTEM_TIME, BASE_MONTH, BASE_YEAR, TIME_IN_SECOND);
+	}
+	*/
+	sd.writer.write(`\n${SYSTEM_TIME},${accelerometer.magnitude.read()},${accelerometer.x_axis.read()},${accelerometer.y_axis.read()},${accelerometer.z_axis.read()},${magnetometer.resistance.read()},${magnetometer.x_axis.read()},${magnetometer.y_axis.read()},${magnetometer.z_axis.read()},${environment.temperature.read()},${noise_sensor.noise.read()},${environment.humidity.read()}`);
+}
